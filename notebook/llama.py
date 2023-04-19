@@ -14,6 +14,8 @@ from fairscale.nn.model_parallel.layers import (
     ColumnParallelLinear,
 )
 
+from typing import List
+
 use_cuda = False
 parallel = False
 
@@ -225,7 +227,7 @@ class Transformer(nn.Module):
         )
 
     @torch.inference_mode()
-    def forward(self, tokens: torch.Tensor, start_pos: int):
+    def forward(self, tokens: torch.Tensor, start_pos: int,) -> List[torch.Tensor, torch.Tensor]:
         _bsz, seqlen = tokens.shape
         h = self.tok_embeddings(tokens)
         self.freqs_cis = self.freqs_cis.to(h.device)
@@ -239,8 +241,9 @@ class Transformer(nn.Module):
         for layer in self.layers:
             h = layer(h, start_pos, freqs_cis, mask)
         h = self.norm(h)
+
         output = self.output(h[:, -1, :])  # only compute last logits
-        return output.float()
+        return output.float(), h
 
 
 def stats_model_param_num(model: Transformer):
